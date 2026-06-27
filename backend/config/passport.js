@@ -12,7 +12,14 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "http://localhost:5000/auth/google/callback",
     },
+
     async (accessToken, refreshToken, profile, done) => {
+      console.log(
+        "FULL PROFILE FROM GOOGLE:",
+        JSON.stringify(profile, null, 2),
+      );
+      console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
+      console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET);
       try {
         let user = await User.findOne({ googleId: profile.id });
 
