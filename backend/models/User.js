@@ -2,18 +2,32 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    googleId: {
+    name: {
       type: String,
       required: true,
       unique: true,
     },
-    name: {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+    },
+    googleId: {
       type: String,
       required: true,
       unique: true,
     },
     photo: {
       type: String,
+    },
+
+    authMethod: {
+      type: String,
+      enum: ["local", "google", "both"],
+      default: "local",
     },
   },
   { timestamps: true },

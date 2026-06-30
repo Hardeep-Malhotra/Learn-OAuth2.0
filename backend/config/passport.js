@@ -14,28 +14,41 @@ passport.use(
     },
 
     async (accessToken, refreshToken, profile, done) => {
-      console.log(
-        "FULL PROFILE FROM GOOGLE:",
-        JSON.stringify(profile, null, 2),
-      );
-      console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
-      console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET);
       try {
-        let user = await User.findOne({ googleId: profile.id });
+        const email = profile.email[0].value;
 
-        if (!user) {
-          user = await User.create({
-            googleId: profile.id,
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            photo: profile.photos[0].value,
-          });
-          console.log("New user created:", user.email);
-        } else {
-          console.log("Existing user logged in:", user.email);
+        // check with this email already user exist or not
+        let user = await User.findOne({ email: email });
+
+        if (user) {
+          // if user find and no googleID means user first signup
+          if (!user.googleId) {
+            user.googleId = profile.id;
+            user.authMethod = "both";
+            if (!user.photo) {
+              user.photo = profile.photos[0].value;
+              await user.save();
+
+              console.log(
+                " Google account successfully linked with  local email : ",
+                email,
+              );
+            } else {
+              console.log("Existing user logged in via Google:", email);
+            }
+          } else {
+            // if user totally new
+            user = await User.create({
+              googleId: profile.id,
+              name: profile.displayName,
+              email: email,
+              photo: profile.photos[0].value,
+              authMethod: "google",
+            });
+            console.log("New Google user created : ", email);
+          }
+          return done(null, user);
         }
-
-        return done(null, user);
       } catch (error) {
         return done(error, null);
       }
