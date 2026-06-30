@@ -24,16 +24,30 @@ function loginSuccess(req, res) {
 // Step 3: Check session status and return logged-in user data to Frontend
 function getCurrentUser(req, res) {
   if (req.user) {
-    res.json({ loggedIn: true, user: req.user });
+    // Security: Frontend bhejte waqt safe object bhejenge (password leak na ho)
+    const userResponse = req.user.toObject();
+    delete userResponse.password;
+
+    res.json({ loggedIn: true, user: userResponse });
   } else {
     res.json({ loggedIn: false });
   }
 }
 
-// Step 4: Terminate the user session and clear cookies
-function logout(req, res) {
-  req.logout(() => {
-    res.redirect("http://localhost:5173");
+// Step 4: Terminate the user session and clear cookies safely (Passport v0.6+ Ready)
+function logout(req, res, next) {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    // Session destroy karke browser se cookie clear kar rahe hain
+    req.session.destroy((err) => {
+      if (err) return next(err);
+      res.clearCookie("connect.sid"); // Default session cookie name
+      res
+        .status(200)
+        .json({ success: true, message: "Logged out successfully" });
+    });
   });
 }
 
@@ -59,10 +73,14 @@ async function manualSignup(req, res) {
         user.authMethod = "both"; // Update flag to indicate account is linked
         await user.save();
 
+        const userResponse = user.toObject();
+        delete userResponse.password; // 🔒 Security Check
+
         return res.json({
           success: true,
           message:
             "Your Google account already existed. Password has been linked successfully! Now you can login both ways.",
+          user: userResponse,
         });
       } else {
         // If the account already exists with a password
@@ -83,17 +101,20 @@ async function manualSignup(req, res) {
       authMethod: "local", // Set flag to local for manual form users
     });
 
+    const userResponse = newUser.toObject();
+    delete userResponse.password; // 🔒 Security Check
+
     res.status(201).json({
       success: true,
       message: "Registration successful!",
-      user: newUser,
+      user: userResponse,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 }
 
-// 🔥 ADDED: Handle manual Form Login
+// Handle manual Form Login
 async function manualLogin(req, res) {
   const { email, password } = req.body;
 
@@ -123,10 +144,14 @@ async function manualLogin(req, res) {
     // Establish a Passport session (Creates the session cookie automatically)
     req.login(user, (err) => {
       if (err) return res.status(500).json({ error: err.message });
+
+      const userResponse = user.toObject();
+      delete userResponse.password; // 🔒 Security Check
+
       return res.json({
         success: true,
         message: "Logged in successfully!",
-        user,
+        user: userResponse,
       });
     });
   } catch (error) {

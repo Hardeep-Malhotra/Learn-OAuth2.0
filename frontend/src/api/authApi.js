@@ -1,28 +1,35 @@
-// This file connects our frontend to the backend.
-// Pages just call these functions instead of writing URLs everywhere.
+import axios from "axios";
 
 const BACKEND_URL = "http://localhost:5000";
 
-// 1. Send the user to Google to log in
+// Create an Axios instance with common configurations
+const API = axios.create({
+  baseURL: `${BACKEND_URL}/auth`,
+  withCredentials: true, // CRITICAL: Automatically includes the session cookie with every request
+});
+
+// 1. Redirect the user to Google's OAuth page
 export function loginWithGoogle() {
-  // Opens the backend login link, which opens the Google Login page
   window.location.href = `${BACKEND_URL}/auth/google`;
 }
 
-// 2. Check if a user is already logged in
+// 2. Check if a user is already logged in (used by AuthContext)
 export async function getCurrentUser() {
-  // Ask the backend if the current visitor is logged in
-  const response = await fetch(`${BACKEND_URL}/auth/user`, {
-    // 'include' sends the secret login cookie (session) to the backend
-    credentials: "include",
-  });
-
-  // Returns backend data: { loggedIn: true/false, user: {...} }
-  return response.json();
+  const response = await API.get("/current_user");
+  return response.data; // Returns { loggedIn: true/false, user: {...} }
 }
 
-// 3. Log the user out
+// 3. Log the user out and clear the session
 export function logout() {
-  // Opens the backend logout link to clear the login session
   window.location.href = `${BACKEND_URL}/auth/logout`;
+}
+
+// 4. 🔥 ADDED: Handle manual form signup and account linking
+export async function manualSignupApi(userData) {
+  return API.post("/signup", userData);
+}
+
+// 5. 🔥 ADDED: Handle manual form login
+export async function manualLoginApi(userData) {
+  return API.post("/login", userData);
 }

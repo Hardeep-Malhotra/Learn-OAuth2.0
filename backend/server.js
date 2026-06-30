@@ -1,12 +1,13 @@
-// This is the MAIN file — it just sets up the app and connects everything.
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
-const passport = require("./config/passport");
-const connectDB = require("./config/db");
 
+//  SAHI TARIKA: Original package ko passport naam do, aur config ko alag se require karo
+const passport = require("passport");
+require("./config/passport");
+
+const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes.route");
 
 const app = express();
@@ -15,6 +16,8 @@ const app = express();
 connectDB();
 
 // ---------- Middleware ----------
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: "http://localhost:5173", // React (Vite) frontend
@@ -30,6 +33,7 @@ app.use(
   }),
 );
 
+// Ab yeh makkhan ki tarah chalega 🚀
 app.use(passport.initialize());
 app.use(passport.session());
 
